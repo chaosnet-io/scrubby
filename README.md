@@ -1,8 +1,6 @@
 # scrubby
 
-tldr; Sanitizes tool output for safe sharing. Can also revert back to original values if needed :)
-
-Deterministically replaces IPv4 addresses, MAC addresses, hostnames, and domain names using fixed-offset or codename substitution. Fully reversible via a JSON mapping file.
+tldr; Deterministically replaces IPv4 addresses, MAC addresses, hostnames, and domain names using fixed-offset or codename substitution. Fully reversible via a JSON mapping file.
 
 The description below details the obfuscation logic of the script as it sits on the repo, not only the values are easily changed on the script's first few lines (~27-32), I **strongly recommend** you change them to something else to add entropy to your own file sanitization.
 
