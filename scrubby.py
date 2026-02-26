@@ -24,14 +24,14 @@ import json
 import argparse
 from collections import OrderedDict
 
-# ---------------------------------------------------------------------------
 # Offset configuration
+# ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 IP_OFFSETS  = (0, 10, 12, 0)
 MAC_OFFSETS = (0x1A, 0x1A, 0x1A, 0x2C, 0x2C, 0x2C)
 
-# ---------------------------------------------------------------------------
 # Hostname / domain config
+# ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 KNOWN_TLDS = {
     'com', 'net', 'org', 'edu', 'gov', 'mil', 'int', 'io', 'co', 'us',
@@ -41,7 +41,7 @@ KNOWN_TLDS = {
     'example', 'invalid', 'localhost', 'arpa',
 }
 
-# Domains we never sanitize (tool infra, public services, known vendors)
+#| Domains we never sanitize (tool infra, public services, known vendors) ----
 SAFE_DOMAINS = {
     'nmap.org', 'nmap.com',
     'cve.mitre.org', 'nvd.nist.gov',
@@ -56,23 +56,22 @@ SAFE_DOMAINS = {
 REDACTED_DOMAIN = 'redacted.local'
 HOST_PREFIX     = 'host'
 
-# Always skip our own substitution domain
+#| Always skip our own substitution domain ----
 SAFE_DOMAINS.add(REDACTED_DOMAIN)
 
-# ---------------------------------------------------------------------------
 # Tracking dicts (original -> sanitized)
+# ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 ip_map:   OrderedDict[str, str] = OrderedDict()
 mac_map:  OrderedDict[str, str] = OrderedDict()
 host_map: OrderedDict[str, str] = OrderedDict()      # original_case -> alias
-_host_seen: dict[str, str]     = {}                   # lowercase -> alias (dedup)
+_host_seen: dict[str, str]     = {}                  # lowercase -> alias (dedup)
 
 _host_counter = 0
 
-# ---------------------------------------------------------------------------
 # Core substitution helpers
 # ---------------------------------------------------------------------------
-
+# ---------------------------------------------------------------------------
 def _wrap_octet(value: int, offset: int) -> int:
     if offset == 0:
         return value
@@ -146,10 +145,9 @@ def sanitize_fqdn(match: re.Match) -> str:
     return alias
 
 
+# Regex patterns 
 # ---------------------------------------------------------------------------
-# Regex patterns
 # ---------------------------------------------------------------------------
-
 IP_RE = re.compile(
     r'\b(?:(?:25[0-5]|2[0-4]\d|1?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|1?\d\d?)\b'
 )
@@ -167,8 +165,9 @@ FQDN_RE = re.compile(
     re.IGNORECASE
 )
 
-# Contextual short hostnames - after keywords that signal a hostname.
-# Hostname must look hostname-like: contain a hyphen, digit, or dot.
+# | Contextual short hostnames - after keywords that signal a hostname. 
+# | Hostname must look hostname-like: contain a hyphen, digit, or dot. ----
+
 HOST_CONTEXT_RE = re.compile(
     r'((?:for|hostname|server|target|rdns|PTR\s+record'
     r'|NetBIOS\s+name|Computer\s+name|DNS\s+name|FQDN)[:\s]+)'
@@ -182,7 +181,7 @@ def _ctx_host_replace(m: re.Match) -> str:
     hostname = m.group(2)
     hl       = hostname.lower()
 
-    # Already handled, safe, or looks like an IP / version string
+    #| Already handled, safe, or looks like an IP / version string ----
     if hl in _host_seen or _is_safe_domain(hl):
         if hl in _host_seen:
             return prefix + _host_seen[hl]
@@ -191,7 +190,7 @@ def _ctx_host_replace(m: re.Match) -> str:
         return m.group(0)
     if re.fullmatch(r'[\d.]+[a-z]?\d*', hostname):
         return m.group(0)
-    # Must look like a hostname: contain a hyphen, digit, dot, or underscore
+    #| Must look like a hostname: contain a hyphen, digit, dot, or underscore ----
     if not re.search(r'[\-\d._]', hostname):
         return m.group(0)
 
@@ -211,10 +210,9 @@ def sanitize_line(line: str) -> str:
     return line
 
 
-# ---------------------------------------------------------------------------
 # Mapping file I/O
 # ---------------------------------------------------------------------------
-
+# ---------------------------------------------------------------------------
 def save_mapping(path: str):
     data = {
         'version': 2,
@@ -241,7 +239,7 @@ def build_reverse_map(data: dict) -> list[tuple[str, str]]:
         pairs.append((san, orig))
     for orig, san in data.get('host_map', {}).items():
         pairs.append((san, orig))
-    # Longest first prevents partial substring matches
+    #| Longest first prevents partial substring matches ----
     pairs.sort(key=lambda kv: len(kv[0]), reverse=True)
     return pairs
 
@@ -252,10 +250,9 @@ def reverse_line(line: str, rev_pairs: list[tuple[str, str]]) -> str:
     return line
 
 
-# ---------------------------------------------------------------------------
 # Human-readable mapping dump
 # ---------------------------------------------------------------------------
-
+# ---------------------------------------------------------------------------
 def dump_mapping_table(stream=sys.stderr):
     if not (ip_map or mac_map or host_map):
         return
@@ -285,10 +282,9 @@ def dump_mapping_table(stream=sys.stderr):
     stream.write('=' * 68 + '\n')
 
 
-# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-
+# ---------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(
         description='Sanitize pentest output (IPs, MACs, hostnames). Reversible.'
@@ -335,7 +331,8 @@ def main():
 
         return
 
-    # ---- SANITIZE MODE ----
+    #| SANITIZE MODE ----
+  
     if args.input:
         with open(args.input, 'r', errors='replace') as f:
             lines = f.readlines()
@@ -344,8 +341,9 @@ def main():
 
     sanitized = [sanitize_line(line) for line in lines]
 
-    # Write sanitized output
-    if args.output:
+  #| Write sanitized output ----
+  
+  if args.output:
         with open(args.output, 'w') as f:
             f.writelines(sanitized)
         map_path = args.map_file or (args.output + '.map.json')
