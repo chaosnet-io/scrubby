@@ -4,7 +4,7 @@ tldr; Sanitizes tool output for safe sharing. Can also revert back to original v
 
 Deterministically replaces IPv4 addresses, MAC addresses, hostnames, and domain names using fixed-offset or codename substitution. Fully reversible via a JSON mapping file.
 
-The description below details the obfuscation logic of the script as it sits on the repo, not only the values are easily changed on the script's first few lines, I **strongly recommend** you change them to something else to add entropy to your own file sanitization.
+The description below details the obfuscation logic of the script as it sits on the repo, not only the values are easily changed on the script's first few lines (~40-45), I **strongly recommend** you change them to something else to add entropy to your own file sanitization.
 
 ## IP Logic:
   - 1st octet: preserved (keeps network context)
